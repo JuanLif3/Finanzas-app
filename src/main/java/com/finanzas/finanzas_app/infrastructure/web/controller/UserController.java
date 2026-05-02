@@ -4,6 +4,7 @@ import com.finanzas.finanzas_app.application.dto.request.CreateUserRequest;
 import com.finanzas.finanzas_app.application.dto.response.UserResponse;
 import com.finanzas.finanzas_app.application.service.UserService;
 import com.finanzas.finanzas_app.infrastructure.persistence.entity.UserEntity;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class UserController {
 
     // * POST: Crear usuario
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         UserEntity newUser = userService.createUser(
                 request.getName(),
                 request.getEmail(),
