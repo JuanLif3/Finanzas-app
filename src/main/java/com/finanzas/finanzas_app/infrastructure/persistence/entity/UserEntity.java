@@ -39,4 +39,9 @@ public class UserEntity {
         this.email = email;
         this.password = password;
     }
+
+    // * Método para actualizar contraseña (opcional, para cambio de contraseña)
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }
