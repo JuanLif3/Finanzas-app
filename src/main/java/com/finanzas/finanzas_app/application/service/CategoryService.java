@@ -58,4 +58,9 @@ public class CategoryService {
         CategoryEntity category = getCategoryById(categoryId);
         categoryRepository.delete(category);
     }
+
+    public CategoryEntity getCategoryByIdDebug(UUID categoryId) {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new RuntimeException("Categoría con ID " + categoryId + " no encontrada en BD"));
+    }
 }
