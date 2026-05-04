@@ -29,4 +29,10 @@ public interface BudgetJpaRepository extends JpaRepository<BudgetEntity, UUID> {
                                 @Param("category") CategoryEntity category,
                                 @Param("start") LocalDateTime start,
                                 @Param("end") LocalDateTime end);
+
+    @Query("SELECT b FROM BudgetEntity b WHERE b.user = :user AND b.period = 'MONTHLY'")
+    List<BudgetEntity> findMonthlyBudgetsByUser(@Param("user") UserEntity user);
+
+
+
 }
