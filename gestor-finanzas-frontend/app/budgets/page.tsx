@@ -72,7 +72,9 @@ export default function BudgetsPage() {
     const [formData, setFormData] = useState({
         categoryId: '',
         limitAmount: 0,
-        period: 'MONTHLY'
+        period: 'MONTHLY',
+        startDate: new Date().toISOString(), // Agregar fecha inicio
+        endDate: null // Opcional
     })
 
     // Función para calcular el gasto real de una categoría en un período
@@ -142,13 +144,23 @@ export default function BudgetsPage() {
 
     const createBudget = async () => {
         try {
-            await api.post(`/budgets/user/${USER_ID}`, formData)
+            const payload = {
+                categoryId: formData.categoryId,
+                limitAmount: formData.limitAmount,
+                period: formData.period,
+                startDate: new Date().toISOString(), // Fecha actual
+                endDate: null // Dejar null para que el backend calcule
+            }
+
+            console.log('Enviando payload:', payload)
+            const response = await api.post(`/budgets/user/${USER_ID}`, payload)
+            console.log('Respuesta:', response.data)
             setOpen(false)
             resetForm()
             await fetchBudgets()
-        } catch (error) {
-            console.error('Error creating budget:', error)
-            alert('Error al crear presupuesto')
+        } catch (error: any) {
+            console.error('Error completo:', error.response?.data)
+            alert(`Error: ${error.response?.data?.message || 'Error al crear presupuesto'}`)
         }
     }
 
@@ -156,7 +168,9 @@ export default function BudgetsPage() {
         setFormData({
             categoryId: categories[0]?.id || '',
             limitAmount: 0,
-            period: 'MONTHLY'
+            period: 'MONTHLY',
+            startDate: new Date().toISOString(),
+            endDate: null
         })
     }
 

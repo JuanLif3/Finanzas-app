@@ -11,7 +11,9 @@ import com.finanzas.finanzas_app.infrastructure.persistence.repository.UserJpaRe
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,5 +75,41 @@ public class BudgetService {
         BudgetEntity budget = budgetRepository.findById(budgetId)
                 .orElseThrow(() -> new RuntimeException("Presupuesto no encontrado"));
         budgetRepository.delete(budget);
+    }
+
+    // Método para obtener el inicio del período según la fecha actual
+    public LocalDateTime getPeriodStart(BudgetPeriod period) {
+        LocalDateTime now = LocalDateTime.now();
+        return switch (period) {
+            case DAILY -> now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case WEEKLY -> now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    .withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case MONTHLY -> now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case YEARLY -> now.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        };
+    }
+
+    // Método para obtener el fin del período según la fecha actual
+    public LocalDateTime getPeriodEnd(BudgetPeriod period) {
+        LocalDateTime start = getPeriodStart(period);
+        return switch (period) {
+            case DAILY -> start.plusDays(1).minusNanos(1);
+            case WEEKLY -> start.plusWeeks(1).minusNanos(1);
+            case MONTHLY -> start.plusMonths(1).minusNanos(1);
+            case YEARLY -> start.plusYears(1).minusNanos(1);
+        };
+    }
+
+    // Método para calcular el gasto real de un presupuesto en el período actual
+    public BigDecimal getSpentInCurrentPeriod(BudgetEntity budget) {
+        LocalDateTime start = getPeriodStart(budget.getPeriod());
+        LocalDateTime end = getPeriodEnd(budget.getPeriod());
+
+        return budgetRepository.getSpentInPeriod(
+                budget.getUser(),
+                budget.getCategory(),
+                start,
+                end
+        );
     }
 }

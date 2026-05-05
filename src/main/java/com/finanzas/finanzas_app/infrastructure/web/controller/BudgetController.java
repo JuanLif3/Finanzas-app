@@ -52,7 +52,33 @@ public class BudgetController {
         List<BudgetEntity> budgets = budgetService.getUserBudgets(userId);
 
         List<BudgetResponse> responses = budgets.stream()
-                .map(budget -> mapToResponse(budget, userId))
+                .map(budget -> {
+                    BigDecimal spent = budgetService.getSpentInCurrentPeriod(budget);
+                    BigDecimal remaining = budget.getLimitAmount().subtract(spent);
+                    BigDecimal percentage = budget.getLimitAmount().compareTo(BigDecimal.ZERO) > 0
+                            ? spent.multiply(BigDecimal.valueOf(100)).divide(budget.getLimitAmount(), 2, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+
+                    CategoryResponse categoryResponse = CategoryResponse.builder()
+                            .id(budget.getCategory().getId())
+                            .name(budget.getCategory().getName())
+                            .color(budget.getCategory().getColor())
+                            .createdAt(budget.getCategory().getCreatedAt())
+                            .build();
+
+                    return BudgetResponse.builder()
+                            .id(budget.getId())
+                            .category(categoryResponse)
+                            .limitAmount(budget.getLimitAmount())
+                            .spentAmount(spent)
+                            .remainingAmount(remaining)
+                            .percentageUsed(percentage)
+                            .period(budget.getPeriod())
+                            .startDate(budgetService.getPeriodStart(budget.getPeriod()))
+                            .endDate(budgetService.getPeriodEnd(budget.getPeriod()))
+                            .createdAt(budget.getCreatedAt())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(responses);
