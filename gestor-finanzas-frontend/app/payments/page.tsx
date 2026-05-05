@@ -68,7 +68,7 @@ export default function PaymentsPage() {
         accountId: '',
         amount: 0,
         description: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString(),
         type: 'EXPENSE'
     })
 
@@ -107,8 +107,9 @@ export default function PaymentsPage() {
             fetchTransactions()
             // Actualizar cuentas para reflejar nuevos saldos
             fetchAccounts()
-        } catch (error) {
-            console.error('Error creating transaction:', error)
+        } catch (error: any) {
+            console.error('Error completo:', error.response?.data)
+            alert(`Error: ${error.response?.data?.message || 'Error al crear transacción'}`)
         }
     }
 
@@ -247,8 +248,13 @@ export default function PaymentsPage() {
                                 <Label>Fecha</Label>
                                 <Input
                                     type="date"
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                    value={formData.date.split('T')[0]}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value
+                                        if (selectedDate) {
+                                            setFormData({ ...formData, date: new Date(selectedDate).toISOString() })
+                                        }
+                                    }}
                                 />
                             </div>
                             <Button onClick={createTransaction} className="w-full">

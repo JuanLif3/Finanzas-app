@@ -25,7 +25,22 @@ interface Account {
     paymentDueDay?: number
 }
 
-const bankOptions = ['FALABELLA', 'SANTANDER', 'CHILE', 'ESTADO', 'BCI', 'BBVA', 'COPEC_PAY', 'MACH', 'TENPO', 'OTRO']
+const bankOptions = [
+    'FALABELLA',
+    'SANTANDER',
+    'BANCO_DE_CHILE',
+    'BANCO_ESTADO',
+    'BCI',
+    'BBVA',
+    'ITAU',
+    'BICE',
+    'MACH',
+    'TENPO',
+    'COPEC_PAY',
+    'MERCADO_PAGO',
+    'CHEQUERA',
+    'OTRO'
+]
 const typeOptions = ['DEBIT', 'CREDIT', 'CASH']
 
 function formatCurrency(amount: number) {
@@ -93,22 +108,27 @@ export default function AccountsPage() {
             const payload: any = {
                 name: formData.name,
                 type: formData.type,
-                bank: formData.bank,
-                balance: formData.balance
+                bank: formData.bank, // Asegurar que es un string válido
+                balance: Number(formData.balance) // Asegurar que es número
             }
 
             if (formData.type === 'CREDIT') {
-                payload.creditLimit = formData.creditLimit
-                payload.billingDay = formData.billingDay
-                payload.paymentDueDay = formData.paymentDueDay
+                payload.creditLimit = Number(formData.creditLimit)
+                payload.billingDay = Number(formData.billingDay)
+                payload.paymentDueDay = Number(formData.paymentDueDay)
             }
 
-            await api.post(`/accounts/user/${USER_ID}`, payload)
+            console.log('Enviando payload:', payload) // Para debug
+
+            const response = await api.post(`/accounts/user/${USER_ID}`, payload)
+            console.log('Respuesta:', response.data)
+
             setOpen(false)
-            fetchAccounts()
             resetForm()
-        } catch (error) {
-            console.error('Error creating account:', error)
+            fetchAccounts()
+        } catch (error: any) {
+            console.error('Error completo:', error.response?.data)
+            alert(`Error: ${error.response?.data?.message || 'Error al crear cuenta'}`)
         }
     }
 
