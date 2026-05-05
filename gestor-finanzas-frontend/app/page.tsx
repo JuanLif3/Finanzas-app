@@ -1,8 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { FinanceProvider } from '@/lib/finance-context'
-import { Header } from '@/components/finance/header'
 import { StatCards } from '@/components/finance/stat-cards'
 import { BalanceChart } from '@/components/finance/balance-chart'
 import { CategoryChart } from '@/components/finance/category-chart'
@@ -14,33 +12,30 @@ import { ScrollReveal } from '@/components/finance/scroll-reveal'
 
 export default function FinanceDashboard() {
   return (
-    <FinanceProvider>
       <div className="min-h-screen bg-background">
         {/* Background gradient effect */}
         <div className="fixed inset-0 -z-10 overflow-hidden">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
-            className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[120px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[120px]"
           />
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="absolute -right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-accent/5 blur-[120px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
+              className="absolute -right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-accent/5 blur-[120px]"
           />
         </div>
-
-        <Header />
 
         <main className="mx-auto max-w-7xl px-4 py-8 md:px-6">
           {/* Welcome Section */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8"
           >
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
               Buenos días, <span className="text-primary">Juan</span>
@@ -77,13 +72,10 @@ export default function FinanceDashboard() {
           {/* Main Content Grid */}
           <ScrollReveal delay={0.3}>
             <section className="grid gap-6 lg:grid-cols-3">
-              {/* Transactions - Takes 2 columns */}
               <div className="lg:col-span-2 space-y-6">
                 <AddTransaction />
                 <TransactionList />
               </div>
-
-              {/* Goals - Takes 1 column */}
               <div>
                 <GoalsCard />
               </div>
@@ -105,6 +97,5 @@ export default function FinanceDashboard() {
           </ScrollReveal>
         </main>
       </div>
-    </FinanceProvider>
   )
 }

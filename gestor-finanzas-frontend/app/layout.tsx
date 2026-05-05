@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { FinanceProvider } from '@/lib/finance-context'
+import { Header } from '@/components/finance/header'
 import './globals.css'
 
-const geistSans = Geist({ 
+const geistSans = Geist({
   subsets: ["latin"],
   variable: '--font-geist-sans'
 })
-const geistMono = Geist_Mono({ 
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: '--font-geist-mono'
 })
@@ -36,16 +38,21 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="bg-background">
+      <html lang="es" className="bg-background" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+      <FinanceProvider>
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+      </FinanceProvider>
+      {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
-    </html>
+      </html>
   )
 }
