@@ -63,4 +63,15 @@ public class CategoryService {
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Categoría con ID " + categoryId + " no encontrada en BD"));
     }
+
+    // * Actualizar categoria
+    public CategoryEntity updateCategory(UUID categoryId, CreateCategoryRequest request) {
+        CategoryEntity category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+
+        category.setName(request.getName());
+        category.setColor(request.getColor());
+
+        return categoryRepository.save(category);
+    }
 }

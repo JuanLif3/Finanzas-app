@@ -68,4 +68,14 @@ public class CategoryController {
                 .createdAt(category.getCreatedAt())
                 .build();
     }
+
+    // * PUT
+    @PutMapping("/{categoryId}")
+    public ResponseEntity<CategoryResponse> updateCategory(
+            @PathVariable UUID categoryId,
+            @Valid @RequestBody CreateCategoryRequest request) {
+
+        CategoryEntity category = categoryService.updateCategory(categoryId, request);
+        return ResponseEntity.ok(mapToResponse(category));
+    }
 }
