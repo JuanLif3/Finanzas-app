@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Trash2, Pencil, ArrowUpRight, ArrowDownRight, Filter, Calendar, Search } from 'lucide-react'
+import { Plus, Trash2, ArrowUpRight, ArrowDownRight, Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import api from '@/lib/api'
+import { useRefresh } from '@/hooks/useRefresh'
 
 const USER_ID = '1de4024a-a90f-4c8e-bbb5-9da9bfd030f7'
 
@@ -54,12 +55,12 @@ function formatDate(dateString: string) {
 }
 
 export default function PaymentsPage() {
+    const { triggerBudgetsRefresh } = useRefresh()
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [accounts, setAccounts] = useState<Account[]>([])
     const [loading, setLoading] = useState(true)
     const [open, setOpen] = useState(false)
-    const [filterOpen, setFilterOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterType, setFilterType] = useState<string>('ALL')
     const [filterCategory, setFilterCategory] = useState<string>('ALL')
@@ -101,12 +102,24 @@ export default function PaymentsPage() {
 
     const createTransaction = async () => {
         try {
-            await api.post(`/payments/user/${USER_ID}`, formData)
+            const payload = {
+                categoryId: formData.categoryId,
+                accountId: formData.accountId,
+                amount: formData.amount,
+                description: formData.description,
+                date: formData.date,
+                type: formData.type
+            }
+
+            await api.post(`/payments/user/${USER_ID}`, payload)
             setOpen(false)
             resetForm()
-            fetchTransactions()
-            // Actualizar cuentas para reflejar nuevos saldos
-            fetchAccounts()
+            await fetchTransactions()
+            await fetchAccounts()
+
+            // Disparar refresco de presupuestos
+            triggerBudgetsRefresh()
+
         } catch (error: any) {
             console.error('Error completo:', error.response?.data)
             alert(`Error: ${error.response?.data?.message || 'Error al crear transacción'}`)
@@ -117,8 +130,12 @@ export default function PaymentsPage() {
         if (confirm('¿Eliminar esta transacción?')) {
             try {
                 await api.delete(`/payments/${id}`)
-                fetchTransactions()
-                fetchAccounts()
+                await fetchTransactions()
+                await fetchAccounts()
+
+                // Disparar refresco de presupuestos
+                triggerBudgetsRefresh()
+
             } catch (error) {
                 console.error('Error deleting transaction:', error)
             }
@@ -131,7 +148,7 @@ export default function PaymentsPage() {
             accountId: accounts[0]?.id || '',
             amount: 0,
             description: '',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString(),
             type: 'EXPENSE'
         })
     }

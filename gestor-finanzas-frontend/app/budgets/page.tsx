@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import api from '@/lib/api'
+import { useRefresh } from '@/hooks/useRefresh'
 
 const USER_ID = '1de4024a-a90f-4c8e-bbb5-9da9bfd030f7'
 
@@ -21,6 +22,15 @@ interface Category {
 }
 
 interface Budget {
+    id: string
+    category: Category
+    limitAmount: number
+    period: string
+    startDate: string
+    endDate: string
+}
+
+interface BudgetWithSpent {
     id: string
     category: Category
     limitAmount: number
@@ -54,7 +64,8 @@ function getProgressColor(percentage: number) {
 }
 
 export default function BudgetsPage() {
-    const [budgets, setBudgets] = useState<Budget[]>([])
+    const { refreshBudgets } = useRefresh()
+    const [budgets, setBudgets] = useState<BudgetWithSpent[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(true)
     const [open, setOpen] = useState(false)
@@ -64,44 +75,57 @@ export default function BudgetsPage() {
         period: 'MONTHLY'
     })
 
+    // Función para calcular el gasto real de una categoría en un período
+    const calculateSpentForBudget = async (budget: Budget): Promise<number> => {
+        try {
+            // Obtener todas las transacciones del usuario
+            const response = await api.get(`/payments/user/${USER_ID}`)
+            const transactions = response.data
+
+            // Filtrar transacciones de la categoría y tipo gasto
+            const categoryTransactions = transactions.filter((t: any) =>
+                t.type === 'EXPENSE' &&
+                t.category.id === budget.category.id
+            )
+
+            // Sumar los montos
+            const totalSpent = categoryTransactions.reduce((sum: number, t: any) => sum + t.amount, 0)
+            return totalSpent
+        } catch (error) {
+            console.error('Error calculating spent:', error)
+            return 0
+        }
+    }
+
     const fetchBudgets = async () => {
         try {
+            setLoading(true)
+            // Obtener presupuestos
             const response = await api.get(`/budgets/user/${USER_ID}`)
-            // Calcular spentAmount para cada budget (simulado por ahora)
-            const budgetsWithSpent = response.data.map((b: any) => ({
-                ...b,
-                spentAmount: b.category.name === 'Uber' ? 5000 : b.category.name === 'Supermercado' ? 25000 : 0,
-                remainingAmount: b.limitAmount - (b.category.name === 'Uber' ? 5000 : b.category.name === 'Supermercado' ? 25000 : 0),
-                percentageUsed: b.category.name === 'Uber' ? 10 : b.category.name === 'Supermercado' ? 25 : 0
-            }))
+            const budgetsData = response.data
+
+            // Para cada presupuesto, calcular el gasto real
+            const budgetsWithSpent: BudgetWithSpent[] = await Promise.all(
+                budgetsData.map(async (budget: Budget) => {
+                    const spentAmount = await calculateSpentForBudget(budget)
+                    const remainingAmount = budget.limitAmount - spentAmount
+                    const percentageUsed = budget.limitAmount > 0
+                        ? Math.min(Math.round((spentAmount / budget.limitAmount) * 100), 100)
+                        : 0
+
+                    return {
+                        ...budget,
+                        spentAmount,
+                        remainingAmount: remainingAmount > 0 ? remainingAmount : 0,
+                        percentageUsed
+                    }
+                })
+            )
+
             setBudgets(budgetsWithSpent)
         } catch (error) {
             console.error('Error fetching budgets:', error)
-            // Datos mock para mostrar el diseño
-            setBudgets([
-                {
-                    id: '1',
-                    category: { id: '1901ae69-a728-4a14-9310-787d33b9d09c', name: 'Uber', color: '#FF5733' },
-                    limitAmount: 50000,
-                    spentAmount: 5000,
-                    remainingAmount: 45000,
-                    percentageUsed: 10,
-                    period: 'MONTHLY',
-                    startDate: '2026-05-01',
-                    endDate: '2026-05-31'
-                },
-                {
-                    id: '2',
-                    category: { id: '8e092f51-bdf1-4e09-9b81-2a19dc32a7cb', name: 'Supermercado', color: '#33FF57' },
-                    limitAmount: 100000,
-                    spentAmount: 25000,
-                    remainingAmount: 75000,
-                    percentageUsed: 25,
-                    period: 'MONTHLY',
-                    startDate: '2026-05-01',
-                    endDate: '2026-05-31'
-                }
-            ])
+            setBudgets([])
         } finally {
             setLoading(false)
         }
@@ -113,10 +137,6 @@ export default function BudgetsPage() {
             setCategories(response.data)
         } catch (error) {
             console.error('Error fetching categories:', error)
-            setCategories([
-                { id: '1', name: 'Uber', color: '#FF5733' },
-                { id: '2', name: 'Supermercado', color: '#33FF57' }
-            ])
         }
     }
 
@@ -124,23 +144,35 @@ export default function BudgetsPage() {
         try {
             await api.post(`/budgets/user/${USER_ID}`, formData)
             setOpen(false)
-            fetchBudgets()
+            resetForm()
+            await fetchBudgets()
         } catch (error) {
             console.error('Error creating budget:', error)
-            // Simular creación exitosa para mostrar en UI
-            setOpen(false)
-            fetchBudgets()
+            alert('Error al crear presupuesto')
         }
+    }
+
+    const resetForm = () => {
+        setFormData({
+            categoryId: categories[0]?.id || '',
+            limitAmount: 0,
+            period: 'MONTHLY'
+        })
     }
 
     useEffect(() => {
         const loadData = async () => {
-            setLoading(true)
             await Promise.all([fetchBudgets(), fetchCategories()])
-            setLoading(false)
         }
         loadData()
     }, [])
+
+    // Efecto para recargar cuando refreshBudgets cambie (desde gastos)
+    useEffect(() => {
+        if (!loading) {
+            fetchBudgets()
+        }
+    }, [refreshBudgets])
 
     return (
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 space-y-6">
@@ -270,7 +302,7 @@ export default function BudgetsPage() {
                       </span>
                                         </div>
                                         <Progress
-                                            value={Math.min(budget.percentageUsed, 100)}
+                                            value={budget.percentageUsed}
                                             className="h-2"
                                             style={{
                                                 '--progress-background': getProgressColor(budget.percentageUsed)
